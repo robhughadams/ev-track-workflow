@@ -1,0 +1,9 @@
+.venv
+.git
+.gitignore
+output/data/experiment.txt
+output/data/protein_mrna.txt
+output/data/mirna.txt
+output/data/lipid.txt
+__pycache__
+*.pyc
