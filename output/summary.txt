@@ -1,0 +1,30 @@
+EV-TRACK Data Analysis Summary
+========================================
+
+Number of studies processed: 26
+
+Cargo Type Profiles
+----------------------------------------
+
+Protein:
+  Matrix dimensions: 25 cargo molecules x 44 studies
+  Top 3 most variable cargo molecules: -, CD9, CD63
+
+PCA Results
+----------------------------------------
+
+Protein:
+  PC1 explained variance: 48.5%
+  PC2 explained variance: 18.6%
+
+PLS-DA Results
+----------------------------------------
+  PLS-DA not performed
+
+Hierarchical Clustering
+----------------------------------------
+  Clustering not available
+
+Biological Interpretation
+----------------------------------------
+  Insufficient data for clustering-based biological interpretation.
