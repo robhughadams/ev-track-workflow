@@ -1,6 +1,4 @@
-def main():
-    print("Hello from ev-track-workflow!")
-
+from run_workflow import main
 
 if __name__ == "__main__":
     main()

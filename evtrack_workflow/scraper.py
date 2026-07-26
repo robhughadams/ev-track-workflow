@@ -30,7 +30,7 @@ def _get_soup(url, session=None):
     return BeautifulSoup(resp.text, "html.parser")
 
 
-def scrape_evtrack_recent(n=50):
+def scrape_evtrack_recent(n=100):
     """Scrape the *n* most recent studies from EV-TRACK (paginated, newest first)."""
     session = requests.Session()
     studies = []
