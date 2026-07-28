@@ -1,3 +1,5 @@
+import hashlib
+import json
 import time
 import logging
 import re
@@ -22,6 +24,19 @@ HEADERS = {
     "Accept-Language": "en-US,en;q=0.5",
 }
 
+CACHE_MANIFEST = ".cache_manifest.json"
+
+
+def _load_manifest(cache_dir: Path):
+    p = cache_dir / CACHE_MANIFEST
+    if p.exists():
+        return json.loads(p.read_text())
+    return {}
+
+
+def _save_manifest(cache_dir: Path, manifest: dict):
+    (cache_dir / CACHE_MANIFEST).write_text(json.dumps(manifest, indent=2))
+
 
 def _get_soup(url, session=None):
     s = session or requests.Session()
@@ -31,7 +46,7 @@ def _get_soup(url, session=None):
 
 
 def scrape_evtrack_recent(n=100):
-    """Scrape the *n* most recent studies from EV-TRACK (paginated, newest first)."""
+    """Scrape the n most recent studies from EV-TRACK (paginated, newest first)."""
     session = requests.Session()
     studies = []
     offset = 0
@@ -111,61 +126,69 @@ def scrape_evtrack_recent(n=100):
             if len(studies) >= n:
                 break
 
-        offset += n
+        offset += len(rows)
         if offset > 500:
             break
         time.sleep(0.5)
 
     df = pd.DataFrame(studies).drop_duplicates(subset=["evtrack_id"])
-    logger.info(
-        "Scraped %d studies from EV-TRACK", len(df)
-    )
+    logger.info("Scraped %d studies from EV-TRACK", len(df))
     return df.head(n).reset_index(drop=True)
 
 
-def _try_download_vesiclepedia(url, dest_path, session):
-    """Download a file from Vesiclepedia, retrying with session cookies."""
-    resp = session.get(url, headers=HEADERS, timeout=120)
+def _conditional_download(url, dest_path, session, etag=None):
+    """Download if ETag changed; return (path, etag, was_updated)."""
+    headers = HEADERS.copy()
+    if etag:
+        headers["If-None-Match"] = etag
+
+    resp = session.get(url, headers=headers, timeout=120)
+
+    if resp.status_code == 304:
+        logger.info("Unchanged (304) — %s", dest_path.name)
+        return dest_path, etag, False
+
     if resp.status_code != 200 or len(resp.content) < 1000:
         raise ConnectionError(
             f"Failed to download {url} (status={resp.status_code}, "
             f"size={len(resp.content)})"
         )
+
     dest_path.parent.mkdir(parents=True, exist_ok=True)
     dest_path.write_bytes(resp.content)
-    logger.info("Downloaded %s -> %s (%d bytes)", url, dest_path, len(resp.content))
-    return dest_path
+    new_etag = resp.headers.get("ETag", "")
+    logger.info("Downloaded %s -> %s (%d bytes, etag=%s)", url, dest_path, len(resp.content), new_etag[:20] if new_etag else "none")
+    return dest_path, new_etag, True
 
 
 VESICLEPEDIA_FILES = {
-    "protein_mrna": (
-        "VESICLEPEDIA_PROTEIN_MRNA_DETAILS_5.1.txt",
-        "protein_mrna.txt",
-    ),
+    "protein_mrna": ("VESICLEPEDIA_PROTEIN_MRNA_DETAILS_5.1.txt", "protein_mrna.txt"),
     "mirna": ("VESICLEPEDIA_MIRNA_DETAILS_5.1.txt", "mirna.txt"),
     "lipid": ("VESICLEPEDIA_LIPID_DETAILS_5.1.txt", "lipid.txt"),
-    "experiment": (
-        "VESICLEPEDIA_EXPERIMENT_DETAILS_5.1.txt",
-        "experiment.txt",
-    ),
+    "experiment": ("VESICLEPEDIA_EXPERIMENT_DETAILS_5.1.txt", "experiment.txt"),
 }
 
 
 def download_vesiclepedia(output_dir: Path):
-    """Download Vesiclepedia dataset files."""
+    """Download Vesiclepedia dataset files with ETag caching."""
     session = requests.Session()
     session.get(VESICLEPEDIA_BASE, headers=HEADERS, timeout=30)
+    manifest = _load_manifest(output_dir)
 
     downloaded = {}
     for key, (remote, local) in VESICLEPEDIA_FILES.items():
         url = f"{VESICLEPEDIA_BASE}/Archive/{remote}"
         dest = output_dir / local
+        cached_etag = manifest.get(local, {}).get("etag")
         try:
-            _try_download_vesiclepedia(url, dest, session)
+            path, etag, _ = _conditional_download(url, dest, session, cached_etag)
+            if etag:
+                manifest[local] = {"etag": etag}
             downloaded[key] = dest
         except Exception as e:
             logger.warning("Could not download %s: %s", url, e)
 
+    _save_manifest(output_dir, manifest)
     return downloaded
 
 
@@ -199,12 +222,10 @@ def build_cargo_profiles(studies_df, vesiclepedia_dir: Path):
 
 
 def _build_from_vesiclepedia(studies_df, protein_path, mirna_path, lipid_path, exp_path):
-    """Parse Vesiclepedia flat files and build study × cargo matrices."""
+    """Parse Vesiclepedia flat files and build study x cargo matrices."""
     exp_df = pd.read_csv(exp_path, sep="\t", encoding="latin1", low_memory=False)
 
-    prot_df = pd.read_csv(
-        protein_path, sep="\t", encoding="latin1", low_memory=False
-    )
+    prot_df = pd.read_csv(protein_path, sep="\t", encoding="latin1", low_memory=False)
 
     pmid_list = studies_df["pmid"].dropna().unique().tolist()
     pmid_list = [p for p in pmid_list if p]
@@ -235,12 +256,8 @@ def _build_from_vesiclepedia(studies_df, protein_path, mirna_path, lipid_path, e
         logger.warning("No protein data matched")
 
     if mirna_path and mirna_path.exists():
-        mirna_df = pd.read_csv(
-            mirna_path, sep="\t", encoding="latin1", low_memory=False
-        )
-        mirna_sub = mirna_df[
-            mirna_df["EXPERIMENT ID"].astype(str).isin(matched_ids)
-        ]
+        mirna_df = pd.read_csv(mirna_path, sep="\t", encoding="latin1", low_memory=False)
+        mirna_sub = mirna_df[mirna_df["EXPERIMENT ID"].astype(str).isin(matched_ids)]
         if not mirna_sub.empty:
             mirna_matrix = mirna_sub.pivot_table(
                 index="MIRNA ID",
@@ -252,12 +269,8 @@ def _build_from_vesiclepedia(studies_df, protein_path, mirna_path, lipid_path, e
             logger.info("miRNA matrix: %s", mirna_matrix.shape)
 
     if lipid_path and lipid_path.exists():
-        lipid_df = pd.read_csv(
-            lipid_path, sep="\t", encoding="latin1", low_memory=False
-        )
-        lipid_sub = lipid_df[
-            lipid_df["EXPERIMENT ID"].astype(str).isin(matched_ids)
-        ]
+        lipid_df = pd.read_csv(lipid_path, sep="\t", encoding="latin1", low_memory=False)
+        lipid_sub = lipid_df[lipid_df["EXPERIMENT ID"].astype(str).isin(matched_ids)]
         if not lipid_sub.empty:
             lipid_matrix = lipid_sub.pivot_table(
                 index="LIPID ID",
@@ -272,9 +285,7 @@ def _build_from_vesiclepedia(studies_df, protein_path, mirna_path, lipid_path, e
 
 
 def _build_representative_profiles(studies_df):
-    """Generate realistic synthetic cargo profiles based on known EV biology,
-    using study metadata (species, sample type, separation protocol) to
-    introduce biologically meaningful variation."""
+    """Generate realistic synthetic cargo profiles based on known EV biology."""
     rng = np.random.default_rng(42)
 
     ev_markers = [
@@ -340,7 +351,7 @@ def _build_representative_profiles(studies_df):
         results[cargo_type] = df
 
     logger.info(
-        "Built representative profiles — protein: %s, rna: %s, lipid: %s",
+        "Built representative profiles - protein: %s, rna: %s, lipid: %s",
         results["protein"].shape,
         results["rna"].shape,
         results["lipid"].shape,
