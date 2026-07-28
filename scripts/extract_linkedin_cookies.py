@@ -163,16 +163,23 @@ def main():
             print(f"  ({len(profiles)} profiles total, using newest by mtime)")
 
     # 2. Extract LinkedIn cookies
-    conn = sqlite3.connect(str(cookie_db))
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT name, value, host, path, expiry,
-               isSecure, isHttpOnly, sameSite
-        FROM moz_cookies
-        WHERE host LIKE '%linkedin.com' OR host LIKE '%.licdn.com'
-    """)
-    rows = cursor.fetchall()
-    conn.close()
+    # Copy to /tmp first to avoid disk I/O errors when reading from
+    # a Windows filesystem (/mnt/c/) while Firefox holds a WAL lock.
+    tmp_copy = Path("/tmp") / f"cookies-{__import__('uuid').uuid4().hex[:8]}.sqlite"
+    shutil.copy2(cookie_db, tmp_copy)
+    try:
+        conn = sqlite3.connect(str(tmp_copy))
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT name, value, host, path, expiry,
+                   isSecure, isHttpOnly, sameSite
+            FROM moz_cookies
+            WHERE host LIKE '%linkedin.com' OR host LIKE '%.licdn.com'
+        """)
+        rows = cursor.fetchall()
+        conn.close()
+    finally:
+        tmp_copy.unlink(missing_ok=True)
 
     if not rows:
         print("❌ No LinkedIn cookies found in Firefox profile.")
@@ -194,9 +201,7 @@ def main():
             print(f"  {c['name']}: {c['domain']} ({'secure' if c['secure'] else ''})")
 
     if args.dry_run:
-        print(f"\n---
-
-Items that would be written:")
+        print("\n---\n\nItems that would be written:")
         print(f"  • {COOKIES_PATH} ({len(cookies)} cookies)")
         print(f"  • {SOURCE_STATE_PATH}")
         print(f"  • {PROFILE_DIR / '.initialized'}")
