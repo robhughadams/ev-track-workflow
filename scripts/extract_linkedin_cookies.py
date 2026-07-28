@@ -111,8 +111,15 @@ def browser_installed() -> dict[str, bool]:
 
 
 def format_cookie_row(name, value, host, path, expiry, is_secure, is_http_only, same_site):
-    """Convert a Firefox cookie row to Playwright-compatible dict."""
+    """Convert a Firefox cookie row to Playwright-compatible dict.
+
+    Firefox stores expiry in milliseconds (like JavaScript Date.now()),
+    but Playwright expects seconds (Unix timestamp). We convert if needed.
+    """
     domain = host if host.startswith('.') else '.' + host
+    # Firefox expiry is in ms; Playwright expects seconds
+    if isinstance(expiry, (int, float)) and expiry > 1_000_000_000_000:
+        expiry = expiry // 1000
     return {
         "name": name,
         "value": value,
