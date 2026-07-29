@@ -1,0 +1,42 @@
+#!/usr/bin/expect -f
+
+set timeout 300
+set env(CLOUDSDK_PYTHON) /home/userland/.local/share/uv/python/cpython-3.13-linux-aarch64-gnu/bin/python3.13
+set gcloud /home/userland/.local/google-cloud-sdk/bin/gcloud
+
+spawn $gcloud auth login --no-launch-browser
+
+expect -re {https://accounts\.google\.com\S+} {
+    set url $expect_out(0,string)
+    set fd [open /tmp/gcloud_auth_url.txt w]
+    puts $fd $url
+    close $fd
+    send_user "\nURL written to /tmp/gcloud_auth_url.txt\n"
+
+    if {[catch {exec echo $url | tee /tmp/gcloud_url_sent.txt | nc -q 1 127.0.0.1 9999}]} {
+        send_user "TCP send failed — port 9999 not listening?\n"
+    } else {
+        send_user "URL sent via TCP to Termux (port 9999)\n"
+    }
+}
+
+expect -re {[Vv]erification [Cc]ode} {
+    send_user "\nWaiting for code on port 9998...\n"
+    send_user "  In Termux:  termux-clipboard-get | nc 127.0.0.1 9998\n"
+    if {[catch {exec nc -l -p 9998 -q 5} code]} {
+        send_user "TCP receive on port 9998 failed: $code\n"
+    } else {
+        set code [string trim $code]
+        send_user "Received code: $code\n"
+        set fd [open /tmp/gcloud_auth_code.txt w]
+        puts $fd $code
+        close $fd
+        send "$code\r"
+    }
+}
+
+expect eof
+catch wait result
+set exitcode [lindex $result 3]
+send_user "\nExit code: $exitcode\n"
+exit $exitcode
