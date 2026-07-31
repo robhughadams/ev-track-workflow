@@ -1,0 +1,66 @@
+source,source_role,target,target_role,relationship_type
+Iain Dykes,iain,Jose M Prieto,ljmu,50th_invitee
+Iain Dykes,iain,Kehinde Ross,ljmu,50th_invitee
+Iain Dykes,iain,Robyn Lotto,ljmu,50th_invitee
+Iain Dykes,iain,Andrew K Powell,ljmu,coauthor
+Iain Dykes,iain,Sandra Ortega-Martorell,ljmu,colleague
+Iain Dykes,iain,Fatima Perez de Heredia,ljmu,colleague
+Iain Dykes,iain,Katie Evans,ljmu,colleague
+Iain Dykes,iain,Darren Sexton,ljmu,colleague
+Iain Dykes,iain,Jon Ashley,ljmu,colleague
+Iain Dykes,iain,Mosharraf Sarker,ljmu,colleague
+Iain Dykes,iain,Shaqil Chaudary,ljmu,colleague
+Iain Dykes,iain,Petra Adamova,phd,supervisor
+Iain Dykes,iain,Adam Crockett,phd,supervisor
+Iain Dykes,iain,Lesley Sloan,phd,50th_invitee
+Iain Dykes,iain,Lise Croft,family,50th_invitee
+Iain Dykes,iain,Jason Johnson,former,former_colleague
+Iain Dykes,iain,Paul Savage,former,former_colleague
+Iain Dykes,iain,Mark Bond,former,former_colleague
+Iain Dykes,iain,Elisa A,former,former_colleague
+Iain Dykes,iain,Jan Fox,former,former_colleague
+Iain Dykes,iain,Nicola Smart,former,former_colleague
+Iain Dykes,iain,Peter Scambler,former,former_colleague
+Iain Dykes,iain,Ayad Eddaoudi,former,former_colleague
+Iain Dykes,iain,Dorota Szumska-Bilska,former,former_colleague
+Iain Dykes,iain,Peter Joyce,former,former_colleague
+Iain Dykes,iain,Sezin Aday Aydin,ev,ev
+Iain Dykes,iain,Mahmoud Eldahshoury,ev,ev
+Iain Dykes,iain,Bethy Airstone,ev,ev
+Iain Dykes,iain,Fahim Razai,candidate,candidate
+Iain Dykes,iain,Himani Taneja,candidate,candidate
+Iain Dykes,iain,Matthew Wenjie Feng,candidate,candidate
+Iain Dykes,iain,Claire Harper,other,50th_invitee
+Iain Dykes,iain,Iain Buckingham,jet,50th_invitee
+Iain Dykes,iain,Iain Buchanan,other,50th_invitee
+Iain Dykes,iain,LJMU,inst,affiliation
+Jose M Prieto,ljmu,LJMU,inst,affiliation
+Kehinde Ross,ljmu,LJMU,inst,affiliation
+Robyn Lotto,ljmu,LJMU,inst,affiliation
+Andrew K Powell,ljmu,LJMU,inst,affiliation
+Sandra Ortega-Martorell,ljmu,LJMU,inst,affiliation
+Fatima Perez de Heredia,ljmu,LJMU,inst,affiliation
+Katie Evans,ljmu,LJMU,inst,affiliation
+Darren Sexton,ljmu,LJMU,inst,affiliation
+Jon Ashley,ljmu,LJMU,inst,affiliation
+Mosharraf Sarker,ljmu,LJMU,inst,affiliation
+Shaqil Chaudary,ljmu,LJMU,inst,affiliation
+Petra Adamova,phd,LJMU,inst,affiliation
+Adam Crockett,phd,LJMU,inst,affiliation
+Lesley Sloan,phd,LJMU,inst,affiliation
+Jason Johnson,former,University of Bristol,inst,affiliation
+Paul Savage,former,University of Bristol,inst,affiliation
+Mark Bond,former,University of Bristol,inst,affiliation
+Elisa A,former,University of Bristol,inst,affiliation
+Jan Fox,former,University of Bristol,inst,affiliation
+Nicola Smart,former,University of Bristol,inst,affiliation
+Peter Scambler,former,UCL / ICH,inst,affiliation
+Ayad Eddaoudi,former,UCL / ICH,inst,affiliation
+Dorota Szumska-Bilska,former,University of Oxford,inst,affiliation
+Peter Joyce,former,University of Oxford,inst,affiliation
+Sezin Aday Aydin,ev,EV Community,inst,affiliation
+Mahmoud Eldahshoury,ev,EV Community,inst,affiliation
+Bethy Airstone,ev,EV Community,inst,affiliation
+Fahim Razai,candidate,University of Liverpool,inst,affiliation
+Himani Taneja,candidate,University of Liverpool,inst,affiliation
+Matthew Wenjie Feng,candidate,University of Liverpool,inst,affiliation
